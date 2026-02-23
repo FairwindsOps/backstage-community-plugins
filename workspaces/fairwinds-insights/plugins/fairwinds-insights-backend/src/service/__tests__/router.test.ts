@@ -16,18 +16,22 @@
 
 import { mockServices } from '@backstage/backend-test-utils';
 import { ConfigReader } from '@backstage/config';
-import { CatalogClient } from '@backstage/catalog-client';
 import { createRouter } from '../router';
-import { AuthService } from '@backstage/backend-plugin-api';
+import { AuthService, HttpAuthService } from '@backstage/backend-plugin-api';
+import { CatalogService } from '@backstage/plugin-catalog-node';
 
 describe('createRouter', () => {
-  const mockCatalogApi = {
+  const mockCatalogService = {
     getEntityByRef: jest.fn(),
-  } as unknown as CatalogClient;
+  } as unknown as CatalogService;
 
   const mockAuth = {
     getToken: jest.fn(),
   } as unknown as AuthService;
+
+  const mockHttpAuth = {
+    credentials: jest.fn(),
+  } as unknown as HttpAuthService;
 
   const mockCache = {
     get: jest.fn().mockResolvedValue(undefined),
@@ -54,9 +58,10 @@ describe('createRouter', () => {
   it('should create a router', async () => {
     const router = await createRouter({
       config,
-      catalogApi: mockCatalogApi,
+      catalogService: mockCatalogService,
       logger,
       auth: mockAuth,
+      httpAuth: mockHttpAuth,
       cache: mockCache,
     });
 

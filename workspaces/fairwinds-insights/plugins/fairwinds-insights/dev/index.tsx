@@ -13,39 +13,92 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { PropsWithChildren } from 'react';
 import { createDevApp } from '@backstage/dev-utils';
+import { EntityProvider } from '@backstage/plugin-catalog-react';
+import { Content, Header, Page } from '@backstage/core-components';
+import { Entity } from '@backstage/catalog-model';
+import Grid from '@mui/material/Grid';
+
 import { fairwindsInsightsPlugin } from '../src';
 import {
-  UnifiedThemeProvider,
-  themes as builtinThemes,
-} from '@backstage/theme';
-import DarkIcon from '@mui/icons-material/Brightness2';
-import LightIcon from '@mui/icons-material/WbSunny';
-import { AppTheme } from '@backstage/core-plugin-api';
+  VulnerabilitiesCard,
+  ActionItemsCard,
+  ActionItemsTopCard,
+  MTDCostOverviewCard,
+  ResourcesHistoryCPUCard,
+  ResourcesHistoryMemoryCard,
+  ResourcesHistoryPodCountCard,
+} from '../src/components';
 
-const customThemes: AppTheme[] = [
+const entities: Entity[] = [
   {
-    id: 'light',
-    title: 'Light Theme',
-    variant: 'light',
-    icon: <LightIcon />,
-    Provider: ({ children }: PropsWithChildren) => (
-      <UnifiedThemeProvider theme={builtinThemes.light} children={children} />
-    ),
+    apiVersion: 'backstage.io/v1alpha1',
+    kind: 'Component',
+    metadata: { name: 'no-config' },
+    spec: {
+      type: 'service',
+      owner: 'guests',
+      system: 'examples',
+      lifecycle: 'production',
+    },
   },
   {
-    id: 'dark',
-    title: 'Dark Theme',
-    variant: 'dark',
-    icon: <DarkIcon />,
-    Provider: ({ children }: PropsWithChildren) => (
-      <UnifiedThemeProvider theme={builtinThemes.dark} children={children} />
-    ),
+    apiVersion: 'backstage.io/v1alpha1',
+    kind: 'Component',
+    metadata: {
+      name: 'with-config',
+      annotations: {
+        'insights.fairwinds.com/app-groups': 'all-resources',
+      },
+    },
+    spec: {
+      type: 'service',
+      owner: 'guests',
+      system: 'examples',
+      lifecycle: 'production',
+    },
   },
 ];
 
-createDevApp()
-  .addThemes(customThemes)
-  .registerPlugin(fairwindsInsightsPlugin)
-  .render();
+const builder = createDevApp().registerPlugin(fairwindsInsightsPlugin);
+
+entities.forEach(entity => {
+  builder.addPage({
+    element: (
+      <Page themeId="home">
+        <Header title={entity.metadata.name} />
+        <Content>
+          <EntityProvider entity={entity}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <VulnerabilitiesCard />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <MTDCostOverviewCard />
+              </Grid>
+              <Grid item xs={12} md={12}>
+                <ActionItemsCard />
+              </Grid>
+              <Grid item xs={12} md={12}>
+                <ActionItemsTopCard />
+              </Grid>
+              <Grid item xs={12} md={12}>
+                <ResourcesHistoryPodCountCard />
+              </Grid>
+              <Grid item xs={12} md={12}>
+                <ResourcesHistoryCPUCard />
+              </Grid>
+              <Grid item xs={12} md={12}>
+                <ResourcesHistoryMemoryCard />
+              </Grid>
+            </Grid>
+          </EntityProvider>
+        </Content>
+      </Page>
+    ),
+    title: entity.metadata.name,
+    path: `/${entity.metadata.name}`,
+  });
+});
+
+builder.render();

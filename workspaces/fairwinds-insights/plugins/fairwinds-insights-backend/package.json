@@ -48,6 +48,7 @@
     "@backstage/catalog-client": "backstage:^",
     "@backstage/catalog-model": "backstage:^",
     "@backstage/config": "backstage:^",
+    "@backstage/plugin-catalog-node": "backstage:^",
     "express": "^4.22.0",
     "express-promise-router": "^4.1.0",
     "node-fetch": "^2.6.7"
@@ -58,6 +59,7 @@
     "@backstage/cli": "backstage:^",
     "@backstage/plugin-auth-backend": "backstage:^",
     "@backstage/plugin-auth-backend-module-guest-provider": "backstage:^",
+    "@backstage/plugin-catalog-node": "backstage:^",
     "@types/node-fetch": "^2.6.11"
   },
   "configSchema": "config.d.ts",

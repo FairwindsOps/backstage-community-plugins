@@ -14,11 +14,39 @@
  * limitations under the License.
  */
 import { createBackend } from '@backstage/backend-defaults';
+import { mockServices } from '@backstage/backend-test-utils';
+import { Entity } from '@backstage/catalog-model';
+import { catalogServiceMock } from '@backstage/plugin-catalog-node/testUtils';
 
 const backend = createBackend();
 
-backend.add(import('@backstage/plugin-auth-backend'));
-backend.add(import('@backstage/plugin-auth-backend-module-guest-provider'));
+const entities: Entity[] = [
+  {
+    apiVersion: 'backstage.io/v1alpha1',
+    kind: 'Component',
+    metadata: { name: 'no-config', title: 'No Config' },
+    spec: {
+      type: 'service',
+    },
+  },
+  {
+    apiVersion: 'backstage.io/v1alpha1',
+    kind: 'Component',
+    metadata: {
+      name: 'with-config',
+      title: 'With Config',
+      annotations: { 'insights.fairwinds.com/app-groups': 'all-resources' },
+    },
+    spec: {
+      type: 'service',
+    },
+  },
+];
+
+backend.add(mockServices.auth.factory());
+backend.add(mockServices.httpAuth.factory());
+backend.add(catalogServiceMock.factory({ entities }));
+
 backend.add(import('../src'));
 
 backend.start();

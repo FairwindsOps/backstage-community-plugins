@@ -17,8 +17,8 @@ import {
   createBackendPlugin,
   coreServices,
 } from '@backstage/backend-plugin-api';
+import { catalogServiceRef } from '@backstage/plugin-catalog-node';
 import { createRouter } from './service/router';
-import { CatalogClient } from '@backstage/catalog-client';
 
 /**
  * The Fairwinds Insights backend plugin.
@@ -32,21 +32,27 @@ export const fairwindsInsightsPlugin = createBackendPlugin({
         config: coreServices.rootConfig,
         logger: coreServices.logger,
         httpRouter: coreServices.httpRouter,
-        discovery: coreServices.discovery,
         auth: coreServices.auth,
+        httpAuth: coreServices.httpAuth,
         cache: coreServices.cache,
+        catalog: catalogServiceRef,
       },
-      async init({ config, logger, httpRouter, discovery, auth, cache }) {
-        const catalogApi = new CatalogClient({
-          discoveryApi: discovery,
-        });
-
+      async init({
+        config,
+        logger,
+        httpRouter,
+        auth,
+        httpAuth,
+        cache,
+        catalog,
+      }) {
         httpRouter.use(
           await createRouter({
             config,
-            catalogApi,
+            catalogService: catalog,
             logger,
             auth,
+            httpAuth,
             cache,
           }),
         );

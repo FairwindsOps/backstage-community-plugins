@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { Router as ExpressRouter } from 'express';
+import { Router as ExpressRouter, Request } from 'express';
 import Router from 'express-promise-router';
-import { CatalogApi } from '@backstage/catalog-client';
+import { CatalogService } from '@backstage/plugin-catalog-node';
 import { parseEntityRef } from '@backstage/catalog-model';
 import fetch from 'node-fetch';
 import {
@@ -34,22 +34,24 @@ import {
 import {
   AuthService,
   CacheService,
+  HttpAuthService,
   LoggerService,
   RootConfigService,
 } from '@backstage/backend-plugin-api';
 
 export interface RouterOptions {
   config: RootConfigService;
-  catalogApi: CatalogApi;
+  catalogService: CatalogService;
   logger: LoggerService;
   auth: AuthService;
+  httpAuth: HttpAuthService;
   cache: CacheService;
 }
 
 export async function createRouter(
   options: RouterOptions,
 ): Promise<ExpressRouter> {
-  const { config, catalogApi, logger, auth, cache } = options;
+  const { config, catalogService, logger, auth, httpAuth, cache } = options;
 
   const router = Router();
 
@@ -80,15 +82,15 @@ export async function createRouter(
   }
 
   async function getAppGroupsFromEntity(
+    req: Request,
     entityRef: string,
   ): Promise<string[] | null> {
     try {
+      const credentials = await httpAuth.credentials(req, { allow: ['user'] });
       const parsedRef = parseEntityRef(entityRef);
-      const { token } = await auth.getPluginRequestToken({
-        onBehalfOf: await auth.getOwnServiceCredentials(),
-        targetPluginId: 'catalog',
+      const entity = await catalogService.getEntityByRef(parsedRef, {
+        credentials,
       });
-      const entity = await catalogApi.getEntityByRef(parsedRef, { token });
 
       if (!entity) {
         logger.warn(`Entity not found: ${entityRef}`);
@@ -312,7 +314,7 @@ export async function createRouter(
     }
 
     try {
-      const appGroups = await getAppGroupsFromEntity(entityRef);
+      const appGroups = await getAppGroupsFromEntity(req, entityRef);
 
       if (!appGroups || appGroups.length === 0) {
         res.status(404).json({
@@ -413,7 +415,7 @@ export async function createRouter(
     }
 
     try {
-      const appGroups = await getAppGroupsFromEntity(entityRef);
+      const appGroups = await getAppGroupsFromEntity(req, entityRef);
 
       if (!appGroups || appGroups.length === 0) {
         res.status(404).json({
@@ -489,7 +491,7 @@ export async function createRouter(
     }
 
     try {
-      const appGroups = await getAppGroupsFromEntity(entityRef);
+      const appGroups = await getAppGroupsFromEntity(req, entityRef);
 
       if (!appGroups || appGroups.length === 0) {
         res.status(404).json({
@@ -557,7 +559,7 @@ export async function createRouter(
     }
 
     try {
-      const appGroups = await getAppGroupsFromEntity(entityRef);
+      const appGroups = await getAppGroupsFromEntity(req, entityRef);
 
       if (!appGroups || appGroups.length === 0) {
         res.status(404).json({
@@ -853,7 +855,7 @@ export async function createRouter(
     }
 
     try {
-      const appGroups = await getAppGroupsFromEntity(entityRef);
+      const appGroups = await getAppGroupsFromEntity(req, entityRef);
 
       if (!appGroups || appGroups.length === 0) {
         res.status(404).json({
@@ -974,7 +976,7 @@ export async function createRouter(
     const preset = typeof datePreset === 'string' ? datePreset : '30d';
 
     try {
-      const appGroups = await getAppGroupsFromEntity(entityRef);
+      const appGroups = await getAppGroupsFromEntity(req, entityRef);
 
       if (!appGroups || appGroups.length === 0) {
         res.status(404).json({
