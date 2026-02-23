@@ -37,21 +37,12 @@ export const fairwindsInsightsPlugin = createBackendPlugin({
         cache: coreServices.cache,
         catalog: catalogServiceRef,
       },
-      async init({
-        config,
-        logger,
-        httpRouter,
-        auth,
-        httpAuth,
-        cache,
-        catalog,
-      }) {
+      async init({ config, logger, httpRouter, httpAuth, cache, catalog }) {
         httpRouter.use(
           await createRouter({
             config,
             catalogService: catalog,
             logger,
-            auth,
             httpAuth,
             cache,
           }),

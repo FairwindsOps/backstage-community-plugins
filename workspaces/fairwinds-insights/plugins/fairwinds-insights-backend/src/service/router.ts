@@ -43,7 +43,6 @@ export interface RouterOptions {
   config: RootConfigService;
   catalogService: CatalogService;
   logger: LoggerService;
-  auth: AuthService;
   httpAuth: HttpAuthService;
   cache: CacheService;
 }
@@ -51,7 +50,7 @@ export interface RouterOptions {
 export async function createRouter(
   options: RouterOptions,
 ): Promise<ExpressRouter> {
-  const { config, catalogService, logger, auth, httpAuth, cache } = options;
+  const { config, catalogService, logger, httpAuth, cache } = options;
 
   const router = Router();
 

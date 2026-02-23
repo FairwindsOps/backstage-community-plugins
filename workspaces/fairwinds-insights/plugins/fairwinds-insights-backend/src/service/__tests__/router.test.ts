@@ -25,10 +25,6 @@ describe('createRouter', () => {
     getEntityByRef: jest.fn(),
   } as unknown as CatalogService;
 
-  const mockAuth = {
-    getToken: jest.fn(),
-  } as unknown as AuthService;
-
   const mockHttpAuth = {
     credentials: jest.fn(),
   } as unknown as HttpAuthService;
@@ -60,7 +56,6 @@ describe('createRouter', () => {
       config,
       catalogService: mockCatalogService,
       logger,
-      auth: mockAuth,
       httpAuth: mockHttpAuth,
       cache: mockCache,
     });
