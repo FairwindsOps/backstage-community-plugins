@@ -32,7 +32,6 @@ import {
   VulnerabilitiesResponse,
 } from '@backstage-community/plugin-fairwinds-insights-common';
 import {
-  AuthService,
   CacheService,
   HttpAuthService,
   LoggerService,
