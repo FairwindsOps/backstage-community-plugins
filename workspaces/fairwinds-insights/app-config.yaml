@@ -10,7 +10,7 @@ backend:
   listen:
     port: 7007
   csp:
-    connect-src: ["'self'", "http:", "https:"]
+    connect-src: ["'self'", 'http:', 'https:']
   cors:
     origin: http://localhost:3000
     methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
