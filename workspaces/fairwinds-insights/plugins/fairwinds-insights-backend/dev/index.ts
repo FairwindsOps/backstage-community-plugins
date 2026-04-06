@@ -35,7 +35,7 @@ const entities: Entity[] = [
     metadata: {
       name: 'with-config',
       title: 'With Config',
-      annotations: { 'insights.fairwinds.com/app-groups': 'all-resources' },
+      annotations: { 'insights.fairwinds.com/app-groups': 'example-website' },
     },
     spec: {
       type: 'service',

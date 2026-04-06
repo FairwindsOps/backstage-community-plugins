@@ -124,7 +124,7 @@ export async function createRouter(
   async function fetchFromInsightsApi<T>(
     endpoint: string,
     appGroups: string[],
-    appGroupKey: AppGroupKey = 'app-groups',
+    appGroupKey: AppGroupKey,
   ): Promise<T> {
     const separator = endpoint.includes('?') ? '&' : '?';
     const appGroupsQuery = buildAppGroupsQuery(
@@ -288,18 +288,22 @@ export async function createRouter(
             fetchFromInsightsApi<VulnerabilitiesSummaryResponse>(
               `${baseUrl}/summaries?page=0&pageSize=25&${queryParams}`,
               appGroups,
+              'appGroups',
             ),
             fetchFromInsightsApi<VulnerabilitiesTopResponse[]>(
               `${baseUrl}/top?groupBy=title&${queryParams}`,
               appGroups,
+              'appGroups',
             ),
             fetchFromInsightsApi<VulnerabilitiesTopResponse[]>(
               `${baseUrl}/top?groupBy=severity&${queryParams}`,
               appGroups,
+              'appGroups',
             ),
             fetchFromInsightsApi<VulnerabilitiesTopResponse[]>(
               `${baseUrl}/top?groupBy=package&${queryParams}`,
               appGroups,
+              'appGroups',
             ),
           ]);
 
@@ -471,18 +475,22 @@ export async function createRouter(
             fetchFromInsightsApi<any[]>(
               `${basePath}?groupBy=severity&${query}`,
               appGroups,
+              'AppGroup',
             ),
             fetchFromInsightsApi<any[]>(
               `${basePath}?groupBy=title&${query}`,
               appGroups,
+              'AppGroup',
             ),
             fetchFromInsightsApi<any[]>(
               `${basePath}?groupBy=namespace&${query}`,
               appGroups,
+              'AppGroup',
             ),
             fetchFromInsightsApi<any[]>(
               `${basePath}?groupBy=resource&${query}`,
               appGroups,
+              'AppGroup',
             ),
           ]);
 
@@ -710,11 +718,16 @@ export async function createRouter(
 
   function getPreviousMtdRange(): { startDate: string; endDate: string } {
     const now = new Date();
-    const startDate = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1, 0, 0, 0, 0),
-    );
+    const prevYear =
+      now.getUTCMonth() === 0 ? now.getUTCFullYear() - 1 : now.getUTCFullYear();
+    const prevMonth = now.getUTCMonth() === 0 ? 11 : now.getUTCMonth() - 1;
+    const startDate = new Date(Date.UTC(prevYear, prevMonth, 1, 0, 0, 0, 0));
+    const lastDayOfPrevMonth = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0),
+    ).getUTCDate();
+    const endDay = Math.min(now.getUTCDate(), lastDayOfPrevMonth);
     const endDate = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59, 999),
+      Date.UTC(prevYear, prevMonth, endDay, 23, 59, 59, 999),
     );
     return {
       startDate: startDate.toISOString(),

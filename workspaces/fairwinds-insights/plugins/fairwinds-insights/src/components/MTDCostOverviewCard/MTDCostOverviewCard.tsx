@@ -99,8 +99,8 @@ export const MTDCostOverviewCard = () => {
     );
   }
 
-  const current = value.currentMtd.totalResourcesCost ?? 0;
-  const previous = value.previousMtd.totalResourcesCost ?? 0;
+  const current = value.currentMtd.filteredResourcesCost ?? 0;
+  const previous = value.previousMtd.filteredResourcesCost ?? 0;
   const percentChange =
     previous > 0 ? ((current - previous) / previous) * 100 : 0;
   const isDecrease = percentChange <= 0;
