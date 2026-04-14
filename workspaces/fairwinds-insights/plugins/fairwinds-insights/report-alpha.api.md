@@ -9,6 +9,22 @@ import { ExtensionDataRef } from '@backstage/frontend-plugin-api';
 import { FilterPredicate } from '@backstage/filter-predicates';
 import { JSX as JSX_2 } from 'react';
 import { OverridableExtensionDefinition } from '@backstage/frontend-plugin-api';
+import { OverridableFrontendPlugin } from '@backstage/frontend-plugin-api';
+
+// @alpha (undocumented)
+export const fairwindsInsightsApiExtension: OverridableExtensionDefinition<{
+  kind: 'api';
+  name: 'api';
+  config: {};
+  configInput: {};
+  output: ExtensionDataRef<unknown, 'core.api.factory', {}>;
+  inputs: {};
+  params: unknown;
+}>;
+
+// @alpha
+const _default: OverridableFrontendPlugin<{}, {}, {}>;
+export default _default;
 
 // @alpha (undocumented)
 export const entityActionItemsCard: OverridableExtensionDefinition<{

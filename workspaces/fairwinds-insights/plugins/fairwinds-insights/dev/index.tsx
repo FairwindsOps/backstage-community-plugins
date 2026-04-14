@@ -13,13 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createDevApp } from '@backstage/dev-utils';
+
+/**
+ * New frontend system dev mode: standalone pages with EntityProvider so all
+ * cards render for both a component without Fairwinds config and one with
+ * annotations (same semantics as the legacy createDevApp setup).
+ */
+// eslint-disable-next-line @backstage/no-ui-css-imports-in-non-frontend
+import '@backstage/ui/css/styles.css';
+
+import ReactDOM from 'react-dom/client';
+import { createApp } from '@backstage/frontend-defaults';
+import {
+  PageBlueprint,
+  createFrontendModule,
+  createFrontendPlugin,
+} from '@backstage/frontend-plugin-api';
+import {
+  Content,
+  Header,
+  Page,
+  Sidebar,
+  SidebarGroup,
+  SidebarItem,
+  SidebarScrollWrapper,
+  SidebarSpace,
+} from '@backstage/core-components';
+import { NavContentBlueprint } from '@backstage/plugin-app-react';
+import BlockIcon from '@mui/icons-material/Block';
+import TuneIcon from '@mui/icons-material/Tune';
 import { EntityProvider } from '@backstage/plugin-catalog-react';
-import { Content, Header, Page } from '@backstage/core-components';
 import { Entity } from '@backstage/catalog-model';
 import Grid from '@mui/material/Grid';
 
-import { fairwindsInsightsPlugin } from '../src';
+import fairwindsInsightsPlugin from '../src/alpha';
 import {
   VulnerabilitiesCard,
   ActionItemsCard,
@@ -60,45 +87,107 @@ const entities: Entity[] = [
   },
 ];
 
-const builder = createDevApp().registerPlugin(fairwindsInsightsPlugin);
-
-entities.forEach(entity => {
-  builder.addPage({
-    element: (
-      <Page themeId="home">
-        <Header title={entity.metadata.name} />
-        <Content>
-          <EntityProvider entity={entity}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <VulnerabilitiesCard />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <MTDCostOverviewCard />
-              </Grid>
-              <Grid item xs={12} md={12}>
-                <ActionItemsCard />
-              </Grid>
-              <Grid item xs={12} md={12}>
-                <ActionItemsTopCard />
-              </Grid>
-              <Grid item xs={12} md={12}>
-                <ResourcesHistoryPodCountCard />
-              </Grid>
-              <Grid item xs={12} md={12}>
-                <ResourcesHistoryCPUCard />
-              </Grid>
-              <Grid item xs={12} md={12}>
-                <ResourcesHistoryMemoryCard />
-              </Grid>
+function EntityDevPage({ entity }: { entity: Entity }) {
+  return (
+    <Page themeId="home">
+      <Header title={String(entity.metadata.name)} />
+      <Content>
+        <EntityProvider entity={entity}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <VulnerabilitiesCard />
             </Grid>
-          </EntityProvider>
-        </Content>
-      </Page>
-    ),
-    title: entity.metadata.name,
-    path: `/${entity.metadata.name}`,
-  });
+            <Grid item xs={12} md={6}>
+              <MTDCostOverviewCard />
+            </Grid>
+            <Grid item xs={12} md={12}>
+              <ActionItemsCard />
+            </Grid>
+            <Grid item xs={12} md={12}>
+              <ActionItemsTopCard />
+            </Grid>
+            <Grid item xs={12} md={12}>
+              <ResourcesHistoryPodCountCard />
+            </Grid>
+            <Grid item xs={12} md={12}>
+              <ResourcesHistoryCPUCard />
+            </Grid>
+            <Grid item xs={12} md={12}>
+              <ResourcesHistoryMemoryCard />
+            </Grid>
+          </Grid>
+        </EntityProvider>
+      </Content>
+    </Page>
+  );
+}
+
+const fairwindsInsightsDevPlugin = createFrontendPlugin({
+  pluginId: 'fairwinds-insights-dev',
+  extensions: [
+    PageBlueprint.make({
+      name: 'no-config',
+      params: {
+        path: '/no-config',
+        title: 'no-config',
+        loader: () => Promise.resolve(<EntityDevPage entity={entities[0]} />),
+      },
+    }),
+    PageBlueprint.make({
+      name: 'with-config',
+      params: {
+        path: '/with-config',
+        title: 'with-config',
+        loader: () => Promise.resolve(<EntityDevPage entity={entities[1]} />),
+      },
+    }),
+  ],
 });
 
-builder.render();
+/** Sidebar links so both dev entities are reachable without typing URLs. */
+const fairwindsInsightsDevNavModule = createFrontendModule({
+  pluginId: 'app',
+  extensions: [
+    NavContentBlueprint.make({
+      params: {
+        component: () => (
+          <Sidebar>
+            <SidebarGroup label="Fairwinds Insights (dev)">
+              <SidebarScrollWrapper>
+                <SidebarItem
+                  icon={BlockIcon}
+                  to="/no-config"
+                  text="no-config"
+                />
+                <SidebarItem
+                  icon={TuneIcon}
+                  to="/with-config"
+                  text="with-config"
+                />
+              </SidebarScrollWrapper>
+            </SidebarGroup>
+            <SidebarSpace />
+          </Sidebar>
+        ),
+      },
+    }),
+  ],
+});
+
+const defaultPage = '/no-config';
+
+const app = createApp({
+  features: [
+    fairwindsInsightsPlugin,
+    fairwindsInsightsDevPlugin,
+    fairwindsInsightsDevNavModule,
+  ],
+});
+
+const root = app.createRoot();
+
+if (typeof window !== 'undefined' && window.location.pathname === '/') {
+  window.location.pathname = defaultPage;
+}
+
+ReactDOM.createRoot(document.getElementById('root')!).render(root);

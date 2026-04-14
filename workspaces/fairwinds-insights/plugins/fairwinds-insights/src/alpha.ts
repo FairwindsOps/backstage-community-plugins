@@ -14,4 +14,6 @@
  * limitations under the License.
  */
 
-export * from './alpha/index';
+export * from './alpha/entityCards';
+export { fairwindsInsightsApiExtension } from './alpha/plugin';
+export { default } from './alpha/plugin';

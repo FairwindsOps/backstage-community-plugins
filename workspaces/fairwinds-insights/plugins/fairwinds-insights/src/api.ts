@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-import { useApi } from '@backstage/core-plugin-api';
-import { discoveryApiRef, fetchApiRef } from '@backstage/core-plugin-api';
+import {
+  createApiRef,
+  DiscoveryApi,
+  FetchApi,
+  useApi,
+} from '@backstage/core-plugin-api';
 import type {
   ActionItemsListResponse,
   ActionItemsTopResponse,
@@ -26,6 +30,12 @@ import type {
 } from '@backstage-community/plugin-fairwinds-insights-common';
 import { ResponseError } from '@backstage/errors';
 
+/** @public */
+export const fairwindsInsightsApiRef = createApiRef<FairwindsInsightsApi>({
+  id: 'plugin.fairwinds-insights.service',
+});
+
+/** @public */
 export interface ActionItemsListParams {
   page?: number;
   pageSize?: number;
@@ -34,109 +44,153 @@ export interface ActionItemsListParams {
   reportType?: string;
 }
 
-export function useFairwindsInsightsApi() {
-  const discoveryApi = useApi(discoveryApiRef);
-  const fetchApi = useApi(fetchApiRef);
+/**
+ * API for the Fairwinds Insights frontend plugin (proxied via the backend).
+ *
+ * @public
+ */
+export interface FairwindsInsightsApi {
+  getVulnerabilities(entityRef: string): Promise<VulnerabilitiesResponse>;
+  getActionItemsList(
+    entityRef: string,
+    params?: ActionItemsListParams,
+  ): Promise<ActionItemsListResponse>;
+  getActionItemFilters(
+    entityRef: string,
+    params?: { fixed?: boolean; resolution?: string; field?: string },
+  ): Promise<ActionItemFiltersResponse>;
+  getActionItemsTop(entityRef: string): Promise<ActionItemsTopResponse>;
+  getCosts(entityRef: string): Promise<CostsMtdResponse>;
+  getResourcesSummaryTimeseries(
+    entityRef: string,
+    datePreset: string,
+  ): Promise<ResourcesSummaryTimeseriesResponse>;
+}
 
-  return {
-    async getVulnerabilities(entityRef: string) {
-      const baseUrl = await discoveryApi.getBaseUrl('fairwinds-insights');
-      const url = `${baseUrl}/vulnerabilities?entityRef=${encodeURIComponent(
-        entityRef,
-      )}`;
+/**
+ * Default implementation calling the fairwinds-insights backend plugin.
+ *
+ * @public
+ */
+export class FairwindsInsightsClient implements FairwindsInsightsApi {
+  constructor(
+    private readonly deps: { discoveryApi: DiscoveryApi; fetchApi: FetchApi },
+  ) {}
 
-      const response = await fetchApi.fetch(url);
-      if (!response.ok) {
-        throw await ResponseError.fromResponse(response);
-      }
-      return response.json() as Promise<VulnerabilitiesResponse>;
-    },
+  async getVulnerabilities(entityRef: string) {
+    const baseUrl = await this.deps.discoveryApi.getBaseUrl(
+      'fairwinds-insights',
+    );
+    const url = `${baseUrl}/vulnerabilities?entityRef=${encodeURIComponent(
+      entityRef,
+    )}`;
 
-    async getActionItemsList(
-      entityRef: string,
-      params: ActionItemsListParams = {},
-    ): Promise<ActionItemsListResponse> {
-      const baseUrl = await discoveryApi.getBaseUrl('fairwinds-insights');
-      const searchParams = new URLSearchParams();
-      searchParams.set('entityRef', entityRef);
-      searchParams.set('page', String(params.page ?? 0));
-      searchParams.set('pageSize', String(params.pageSize ?? 25));
-      searchParams.set('orderBy', params.orderBy ?? 'Severity.desc');
-      if (params.search) searchParams.set('Search', params.search);
-      if (params.reportType) searchParams.set('ReportType', params.reportType);
-      const url = `${baseUrl}/action-items?${searchParams.toString()}`;
+    const response = await this.deps.fetchApi.fetch(url);
+    if (!response.ok) {
+      throw await ResponseError.fromResponse(response);
+    }
+    return response.json() as Promise<VulnerabilitiesResponse>;
+  }
 
-      const response = await fetchApi.fetch(url);
-      if (!response.ok) {
-        throw await ResponseError.fromResponse(response);
-      }
-      return response.json() as Promise<ActionItemsListResponse>;
-    },
+  async getActionItemsList(
+    entityRef: string,
+    params: ActionItemsListParams = {},
+  ): Promise<ActionItemsListResponse> {
+    const baseUrl = await this.deps.discoveryApi.getBaseUrl(
+      'fairwinds-insights',
+    );
+    const searchParams = new URLSearchParams();
+    searchParams.set('entityRef', entityRef);
+    searchParams.set('page', String(params.page ?? 0));
+    searchParams.set('pageSize', String(params.pageSize ?? 25));
+    searchParams.set('orderBy', params.orderBy ?? 'Severity.desc');
+    if (params.search) searchParams.set('Search', params.search);
+    if (params.reportType) searchParams.set('ReportType', params.reportType);
+    const url = `${baseUrl}/action-items?${searchParams.toString()}`;
 
-    async getActionItemFilters(
-      entityRef: string,
-      params: { fixed?: boolean; resolution?: string; field?: string } = {},
-    ): Promise<ActionItemFiltersResponse> {
-      const baseUrl = await discoveryApi.getBaseUrl('fairwinds-insights');
-      const searchParams = new URLSearchParams();
-      searchParams.set('entityRef', entityRef);
-      searchParams.set('Fixed', String(params.fixed ?? false));
-      searchParams.set('Resolution', params.resolution ?? 'None');
-      searchParams.set('Field', params.field ?? 'ReportType');
-      const url = `${baseUrl}/action-item-filters?${searchParams.toString()}`;
+    const response = await this.deps.fetchApi.fetch(url);
+    if (!response.ok) {
+      throw await ResponseError.fromResponse(response);
+    }
+    return response.json() as Promise<ActionItemsListResponse>;
+  }
 
-      const response = await fetchApi.fetch(url);
-      if (!response.ok) {
-        throw await ResponseError.fromResponse(response);
-      }
-      return response.json() as Promise<ActionItemFiltersResponse>;
-    },
+  async getActionItemFilters(
+    entityRef: string,
+    params: { fixed?: boolean; resolution?: string; field?: string } = {},
+  ): Promise<ActionItemFiltersResponse> {
+    const baseUrl = await this.deps.discoveryApi.getBaseUrl(
+      'fairwinds-insights',
+    );
+    const searchParams = new URLSearchParams();
+    searchParams.set('entityRef', entityRef);
+    searchParams.set('Fixed', String(params.fixed ?? false));
+    searchParams.set('Resolution', params.resolution ?? 'None');
+    searchParams.set('Field', params.field ?? 'ReportType');
+    const url = `${baseUrl}/action-item-filters?${searchParams.toString()}`;
 
-    async getActionItemsTop(
-      entityRef: string,
-    ): Promise<ActionItemsTopResponse> {
-      const baseUrl = await discoveryApi.getBaseUrl('fairwinds-insights');
-      const url = `${baseUrl}/action-items/top?entityRef=${encodeURIComponent(
-        entityRef,
-      )}`;
+    const response = await this.deps.fetchApi.fetch(url);
+    if (!response.ok) {
+      throw await ResponseError.fromResponse(response);
+    }
+    return response.json() as Promise<ActionItemFiltersResponse>;
+  }
 
-      const response = await fetchApi.fetch(url);
+  async getActionItemsTop(entityRef: string): Promise<ActionItemsTopResponse> {
+    const baseUrl = await this.deps.discoveryApi.getBaseUrl(
+      'fairwinds-insights',
+    );
+    const url = `${baseUrl}/action-items/top?entityRef=${encodeURIComponent(
+      entityRef,
+    )}`;
 
-      if (!response.ok) {
-        throw await ResponseError.fromResponse(response);
-      }
-      return response.json() as Promise<ActionItemsTopResponse>;
-    },
+    const response = await this.deps.fetchApi.fetch(url);
 
-    async getCosts(entityRef: string): Promise<CostsMtdResponse> {
-      const baseUrl = await discoveryApi.getBaseUrl('fairwinds-insights');
-      const url = `${baseUrl}/costs-mtd-summary?entityRef=${encodeURIComponent(
-        entityRef,
-      )}`;
+    if (!response.ok) {
+      throw await ResponseError.fromResponse(response);
+    }
+    return response.json() as Promise<ActionItemsTopResponse>;
+  }
 
-      const response = await fetchApi.fetch(url);
+  async getCosts(entityRef: string): Promise<CostsMtdResponse> {
+    const baseUrl = await this.deps.discoveryApi.getBaseUrl(
+      'fairwinds-insights',
+    );
+    const url = `${baseUrl}/costs-mtd-summary?entityRef=${encodeURIComponent(
+      entityRef,
+    )}`;
 
-      if (!response.ok) {
-        throw await ResponseError.fromResponse(response);
-      }
-      return response.json() as Promise<CostsMtdResponse>;
-    },
+    const response = await this.deps.fetchApi.fetch(url);
 
-    async getResourcesSummaryTimeseries(
-      entityRef: string,
-      datePreset: string,
-    ): Promise<ResourcesSummaryTimeseriesResponse> {
-      const baseUrl = await discoveryApi.getBaseUrl('fairwinds-insights');
-      const searchParams = new URLSearchParams();
-      searchParams.set('entityRef', entityRef);
-      searchParams.set('datePreset', datePreset);
-      const url = `${baseUrl}/resources-summary-timeseries?${searchParams.toString()}`;
+    if (!response.ok) {
+      throw await ResponseError.fromResponse(response);
+    }
+    return response.json() as Promise<CostsMtdResponse>;
+  }
 
-      const response = await fetchApi.fetch(url);
-      if (!response.ok) {
-        throw await ResponseError.fromResponse(response);
-      }
-      return response.json() as Promise<ResourcesSummaryTimeseriesResponse>;
-    },
-  };
+  async getResourcesSummaryTimeseries(
+    entityRef: string,
+    datePreset: string,
+  ): Promise<ResourcesSummaryTimeseriesResponse> {
+    const baseUrl = await this.deps.discoveryApi.getBaseUrl(
+      'fairwinds-insights',
+    );
+    const searchParams = new URLSearchParams();
+    searchParams.set('entityRef', entityRef);
+    searchParams.set('datePreset', datePreset);
+    const url = `${baseUrl}/resources-summary-timeseries?${searchParams.toString()}`;
+
+    const response = await this.deps.fetchApi.fetch(url);
+    if (!response.ok) {
+      throw await ResponseError.fromResponse(response);
+    }
+    return response.json() as Promise<ResourcesSummaryTimeseriesResponse>;
+  }
+}
+
+/**
+ * @public
+ */
+export function useFairwindsInsightsApi(): FairwindsInsightsApi {
+  return useApi(fairwindsInsightsApiRef);
 }

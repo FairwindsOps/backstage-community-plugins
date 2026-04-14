@@ -17,12 +17,15 @@
 /**
  * Fairwinds Insights plugin for Backstage.
  *
+ * Install the plugin feature from `@backstage-community/plugin-fairwinds-insights/alpha` in your app `features` array.
+ *
  * @packageDocumentation
  */
 
-/** @public */
+export type { ActionItemsListParams, FairwindsInsightsApi } from './api';
 export {
-  fairwindsInsightsPlugin,
-  fairwindsInsightsPlugin as plugin,
-} from './plugin';
+  FairwindsInsightsClient,
+  fairwindsInsightsApiRef,
+  useFairwindsInsightsApi,
+} from './api';
 export * from './components';
