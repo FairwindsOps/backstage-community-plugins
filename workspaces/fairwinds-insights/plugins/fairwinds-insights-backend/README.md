@@ -2,7 +2,7 @@
 
 This backend plugin is primarily responsible for the following:
 
-- Exposes HTTP API routes used by the [Fairwinds Insights frontend plugin](../fairwinds-insights/README.md) to show vulnerabilities, action items, and cost (MTD) for Backstage entities.
+- Exposes HTTP API routes used by the [Fairwinds Insights frontend plugin](../fairwinds-insights/README.md) to show vulnerabilities, action items, and cost (MTD) for Backstage entities. The frontend consumes these routes through `fairwindsInsightsApiRef`.
 - Resolves entity → Fairwinds Insights **app-groups** via the catalog (annotation `insights.fairwinds.com/app-groups` or spec `app-groups` / `app-group`), then proxies requests to the Fairwinds Insights API with authentication and optional in-memory caching.
 
 ## Install

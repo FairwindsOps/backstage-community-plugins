@@ -1,10 +1,10 @@
 # Fairwinds Insights (Backstage)
 
-This workspace contains plugins for integrating [Fairwinds Insights](https://www.fairwinds.com/fairwinds-insights) with Backstage, with metrics and insights for your organization.
+This workspace contains plugins for integrating [Fairwinds Insights](https://www.fairwinds.com/fairwinds-insights) with Backstage: vulnerabilities, month-to-date cost, action items, and resource history for catalog entities linked to Insights app groups.
 
 ## Start dev environment
 
-Create `app-config.local.yaml` with Fairwinds Insights configuration:
+Create `app-config.local.yaml` with Fairwinds Insights configuration (used when you run the backend alongside the app):
 
 ```yaml
 fairwindsInsights:
@@ -14,23 +14,20 @@ fairwindsInsights:
   cacheTTL: 300 # optional; seconds (default 300)
 ```
 
-To start the app, run:
-
-Make sure you have yarn 4.X installed
+Install dependencies and start the workspace (Yarn 4.x):
 
 ```sh
 yarn --version
-```
-
-```sh
 yarn install && yarn start
 ```
 
+The frontend plugin’s dev shell (`plugins/fairwinds-insights/dev/index.tsx`) uses `createApp` from `@backstage/frontend-defaults` with the default export from `./alpha`, plus standalone pages so cards can be exercised with and without the app-groups annotation.
+
 ## Plugins
 
-- [fairwinds-insights](./plugins/fairwinds-insights/README.md): Frontend plugin that provides the UI components and functionality.
-- [fairwinds-insights-common](./plugins/fairwinds-insights-common/README.md): Shared types, permissions, and constants.
-- [fairwinds-insights-backend](./plugins/fairwinds-insights-backend/README.md): Backend plugin that provides the API integration and proxies to the Fairwinds Insights API.
+- [fairwinds-insights](./plugins/fairwinds-insights/README.md): UI, API client, and catalog entity card extensions.
+- [fairwinds-insights-common](./plugins/fairwinds-insights-common/README.md): Shared types and helpers.
+- [fairwinds-insights-backend](./plugins/fairwinds-insights-backend/README.md): Backend API and Insights proxy.
 
 ## Screenshots
 

@@ -1,6 +1,6 @@
 # Fairwinds Insights Plugin
 
-This plugin surfaces [Fairwinds Insights](https://www.fairwinds.com/fairwinds-insights) data in Backstage: Vulnerabilities, Cost (MTD), and Action Items for entities that are linked to Insights via the `insights.fairwinds.com/app-groups` annotation.
+This plugin surfaces [Fairwinds Insights](https://www.fairwinds.com/fairwinds-insights) data in Backstage: vulnerabilities, cost (MTD), action items, and resource history for entities linked to Insights via the `insights.fairwinds.com/app-groups` annotation (or `spec.app-groups` / `spec.app-group`).
 
 ## Screenshots
 
@@ -18,30 +18,39 @@ This plugin surfaces [Fairwinds Insights](https://www.fairwinds.com/fairwinds-in
 
 ## Setup
 
-**Note:** Install and configure the backend plugin before the frontend so the frontend can fetch data.
+**Install and configure the [Fairwinds Insights backend plugin](../fairwinds-insights-backend/README.md) first** so the frontend can reach the `fairwinds-insights` HTTP routes.
 
-1. Install and configure the [Fairwinds Insights backend plugin](../fairwinds-insights-backend/README.md) first.
-
-2. Install the frontend plugin:
+### 1. Install the package
 
 ```bash
 # From your Backstage root directory
 yarn --cwd packages/app add @backstage-community/plugin-fairwinds-insights
 ```
 
-3. Register the plugin in your app:
+### 2. Register the frontend plugin (new frontend system)
+
+The integration point is the **default export** from the `/alpha` entry: it registers the Insights API extension and catalog **entity card** extensions. Add it to your app `features` (exact `createApp` import depends on your app template, often `@backstage/frontend-defaults`):
 
 ```tsx
-// In packages/app/src/App.tsx
-import { fairwindsInsightsPlugin } from '@backstage-community/plugin-fairwinds-insights';
+// e.g. packages/app/src/App.tsx
+import { createApp } from '@backstage/frontend-defaults';
+import fairwindsInsightsPlugin from '@backstage-community/plugin-fairwinds-insights/alpha';
 
-const app = createApp({
-  // ...
-  plugins: [fairwindsInsightsPlugin],
+export const app = createApp({
+  features: [
+    // ...other features (catalog, etc.)
+    fairwindsInsightsPlugin,
+  ],
 });
 ```
 
-4. Example config shape:
+If you use [feature discovery](https://backstage.io/docs/frontend-system/architecture/app/#feature-discovery), the plugin may be picked up automatically without a manual import; otherwise keep the explicit `features` entry above.
+
+**Alpha exports:** the same module also exports `fairwindsInsightsApiExtension` and the individual entity card blueprints (for example `entityVulnerabilitiesCard`) if you need to compose or test extensions manually.
+
+### 3. Configuration
+
+Backend configuration (used by the proxy, not the frontend package directly):
 
 ```yaml
 # app-config.yaml
@@ -52,14 +61,52 @@ fairwindsInsights:
   cacheTTL: 300 # optional; cache TTL in seconds (default: 300)
 ```
 
-### Entity pages
+### 4. Entity pages — catalog entity cards
 
-Add the plugin’s entity cards to the Overview (or other layouts) where you want Insights data. All cards require the `insights.fairwinds.com/app-groups` annotation on the entity.
+Each card is published as a catalog **entity card** extension. They only render for entities that have at least one app group (same rules as the backend). Extension IDs follow `entity-card:fairwinds-insights/<name>`:
 
-Example using the same layout as in this workspace’s `packages/app`:
+| Extension ID                                                 | Card                     |
+| ------------------------------------------------------------ | ------------------------ |
+| `entity-card:fairwinds-insights/vulnerabilities`             | Vulnerability summary    |
+| `entity-card:fairwinds-insights/mtd-cost-overview`           | Month-to-date cost       |
+| `entity-card:fairwinds-insights/action-items-top`            | Top action items (chart) |
+| `entity-card:fairwinds-insights/action-items`                | Full action items table  |
+| `entity-card:fairwinds-insights/resources-history-pod-count` | Pod count over time      |
+| `entity-card:fairwinds-insights/resources-history-cpu`       | CPU over time            |
+| `entity-card:fairwinds-insights/resources-history-memory`    | Memory over time         |
+
+Enable the cards your app needs via `app.extensions` in `app-config.yaml` (see [app configuration](https://backstage.io/docs/frontend-system/architecture/app-configuration/) and the catalog [entity card](https://backstage.io/docs/frontend-system/building-plugins/common-extension-blueprints/#entity-card) docs). Example:
+
+```yaml
+app:
+  extensions:
+    - entity-card:fairwinds-insights/vulnerabilities
+    - entity-card:fairwinds-insights/mtd-cost-overview
+    - entity-card:fairwinds-insights/action-items-top
+    - entity-card:fairwinds-insights/action-items
+    - entity-card:fairwinds-insights/resources-history-pod-count
+    - entity-card:fairwinds-insights/resources-history-cpu
+    - entity-card:fairwinds-insights/resources-history-memory
+```
+
+### 5. Annotation
+
+Entities must declare which Fairwinds Insights app group(s) they belong to:
+
+```yaml
+# catalog-info.yaml
+metadata:
+  annotations:
+    insights.fairwinds.com/app-groups: <APP_GROUP_NAME>
+```
+
+For multiple app groups, use comma-separated values.
+
+### Optional: embed card components manually
+
+The main package entry (`@backstage-community/plugin-fairwinds-insights`) exports the same React components for custom layouts, tests, or older catalog composition. Example:
 
 ```tsx
-// In packages/app/src/components/catalog/EntityPage.tsx
 import {
   ActionItemsCard,
   ActionItemsTopCard,
@@ -69,76 +116,19 @@ import {
   ResourcesHistoryCPUCard,
   ResourcesHistoryMemoryCard,
 } from '@backstage-community/plugin-fairwinds-insights';
-
-// In your overview content (e.g. overviewContent or defaultEntityPage):
-<Grid container spacing={3} alignItems="stretch">
-  {/* ... other cards ... */}
-  <Grid item md={8} xs={12}>
-    <VulnerabilitiesCard />
-  </Grid>
-  <Grid item md={4} xs={12}>
-    <MTDCostOverviewCard />
-  </Grid>
-  <Grid item md={12} xs={12}>
-    <ActionItemsTopCard />
-  </Grid>
-  <Grid item md={12} xs={12}>
-    <ActionItemsCard />
-  </Grid>
-  <Grid item md={12} xs={12}>
-    <ResourcesHistoryPodCountCard />
-  </Grid>
-  <Grid item md={12} xs={12}>
-    <ResourcesHistoryCPUCard />
-  </Grid>
-  <Grid item md={12} xs={12}>
-    <ResourcesHistoryMemoryCard />
-  </Grid>
-</Grid>;
 ```
 
-**Annotation:** entities must declare which Fairwinds Insights app group(s) they belong to:
+Wrap with `EntityProvider` where the entity is not already provided by the catalog page. All cards use `useFairwindsInsightsApi()` and the backend plugin ID `fairwinds-insights`.
 
-```yaml
-# catalog-info.yaml
-metadata:
-  annotations:
-    insights.fairwinds.com/app-groups: <APP_GROUP_NAME>
-```
+### Package exports
 
-In case of multiple app groups, use comma-separated values.
-
-### Exported components
-
-- **VulnerabilitiesCard** – vulnerability summary for the entity’s app group(s).
-- **MTDCostOverviewCard** – month-to-date cost overview.
-- **ActionItemsTopCard** – top action items (e.g. by namespace/resource/severity/title).
-- **ActionItemsCard** – full action items list (table with filters).
-- **ResourcesHistoryPodCountCard** – resource history: pod count over time.
-- **ResourcesHistoryCPUCard** – resource history: CPU usage over time.
-- **ResourcesHistoryMemoryCard** – resource history: memory usage over time.
-
-All of them use `useFairwindsInsightsApi()` and the backend route `fairwinds-insights`; without the backend plugin and proper config, the cards will not load data.
-
-## New Frontend System
-
-### Setup
-
-If you use [feature discovery](https://backstage.io/docs/frontend-system/architecture/app/#feature-discovery), the plugin may be picked up automatically. Otherwise, add it explicitly:
-
-```tsx
-// packages/app/src/App.tsx
-import fairwindsInsightsPlugin from '@backstage-community/plugin-fairwinds-insights/alpha';
-
-const app = createApp({
-  features: [
-    // ...
-    fairwindsInsightsPlugin,
-  ],
-});
-```
+| Entry                                                  | Contents                                                                                                             |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `@backstage-community/plugin-fairwinds-insights`       | Card components, `fairwindsInsightsApiRef`, `useFairwindsInsightsApi`, `FairwindsInsightsClient`, and related types. |
+| `@backstage-community/plugin-fairwinds-insights/alpha` | Default frontend plugin (features array), API extension, entity card extensions.                                     |
 
 ## Links
 
 - [Fairwinds Insights](https://www.fairwinds.com/fairwinds-insights)
+- [Backstage frontend system](https://backstage.io/docs/frontend-system/)
 - [Backstage plugin docs](https://backstage.io/docs)
